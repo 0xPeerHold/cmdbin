@@ -415,87 +415,87 @@ That is read-only. It will not update usage counts, remembered values, or anythi
 
 ## Local API
 
-A local HTTP endpoint that a program on the same machine can use to read your commands and add new ones[cite: 1]. Claude Code, Ollama, a shell script, or you with `curl`[cite: 1].
+A local HTTP endpoint that a program on the same machine can use to read your commands and add new ones. Claude Code, Ollama, a shell script, or you with `curl`.
 
-**cmdbin answers requests. It never makes them[cite: 1].** It holds no API key, no model endpoint and no vendor relationship, and it opens no connection of its own[cite: 1]. Which model you point at this, and whether that model runs locally or somewhere else, happens entirely in your client[cite: 1]. cmdbin is not part of that conversation[cite: 1].
+**cmdbin answers requests. It never makes them.** It holds no API key, no model endpoint and no vendor relationship, and it opens no connection of its own. Which model you point at this, and whether that model runs locally or somewhere else, happens entirely in your client. cmdbin is not part of that conversation.
 
-**It is off until you arm it[cite: 1].** There is no ambient endpoint sitting on your loopback port waiting to be found by whatever else runs as you[cite: 1].
+**It is off until you arm it.** There is no ambient endpoint sitting on your loopback port waiting to be found by whatever else runs as you.
 
 ### Arming it
 
-Three states[cite: 1]. Reading and writing are armed separately, so an agent doing read-only work never holds a capability it does not use[cite: 1].
+Three states. Reading and writing are armed separately, so an agent doing read-only work never holds a capability it does not use.
 
 | State | `/api/llm`, `/api/llm/pack` | `POST /api/llm/add` |
 | --- | --- | --- |
-| **off** (default)[cite: 1] | refused[cite: 1] | refused[cite: 1] |
-| **read**[cite: 1] | allowed[cite: 1] | refused[cite: 1] |
-| **write**[cite: 1] | allowed[cite: 1] | allowed[cite: 1] |
+| **off** (default) | refused | refused |
+| **read** | allowed | refused |
+| **write** | allowed | allowed |
 
-**In the app:** the API button in the header[cite: 1]. Host only — a paired phone cannot open a write path into your bin[cite: 1].
+**In the app:** the API button in the header. Host only — a paired phone cannot open a write path into your bin.
 
 **At startup:**
 
 ```bash
-cmdbin -api                    # armed read-only
-cmdbin -api-write              # armed for reading and writing
-cmdbin -api -api-timeout 2h    # a longer window
-cmdbin -api -api-timeout 0     # armed until you switch it off
+cmdbin -api     # armed read-only
+cmdbin -api-write    # armed for reading and writing
+cmdbin -api -api-timeout 2h # a longer window
+cmdbin -api -api-timeout 0  # armed until you switch it off
 
 ```
 
-[cite: 1]
 
-`-api` arms read-only on purpose[cite: 1]. Writing needs its own flag, so the state that can change your bin is never one keystroke away from the state that cannot[cite: 1].
 
-The token is printed to the terminal at startup, the same way the pairing PIN is[cite: 1]. On a shared machine that puts a live credential in your scrollback[cite: 1].
+`-api` arms read-only on purpose. Writing needs its own flag, so the state that can change your bin is never one keystroke away from the state that cannot.
+
+The token is printed to the terminal at startup, the same way the pairing PIN is. On a shared machine that puts a live credential in your scrollback.
 
 #### The window closes
 
-`-api-timeout` is a ceiling, default **30 minutes**, measured from the moment you arm it[cite: 1]. It is not an idle timeout: a busy session is cut off just the same[cite: 1]. That is deliberate — the rule is short enough to state in one sentence, and `0` is there for a dedicated box where you would rather not have one[cite: 1].
+`-api-timeout` is a ceiling, default **30 minutes**, measured from the moment you arm it. It is not an idle timeout: a busy session is cut off just the same. That is deliberate — the rule is short enough to state in one sentence, and `0` is there for a dedicated box where you would rather not have one.
 
-A long working session will hit it eventually[cite: 1]. When it does, the next call is refused with `api-off` and you arm it again, which mints a new token[cite: 1].
+A long working session will hit it eventually. When it does, the next call is refused with `api-off` and you arm it again, which mints a new token.
 
-**Arming state does not survive a restart[cite: 1].** Restarting cmdbin disarms it, exactly as restarting drops every paired sharing session[cite: 1].
+**Arming state does not survive a restart.** Restarting cmdbin disarms it, exactly as restarting drops every paired sharing session.
 
 ### Authentication
 
-Send the token as a header[cite: 1]:
+Send the token as a header:
 
 ```
 X-Cmdbin-Token: <token>
 
 ```
 
-[cite: 1]
 
-`Authorization: Bearer <token>` also works[cite: 1].
 
-The token is shown beside the switch in the app, and printed at startup if a flag armed it[cite: 1]. It is **minted when you arm and invalidated the moment you disarm**, so it never outlives its window[cite: 1]. Re-arming rotates it; the previous one stops working immediately[cite: 1].
+`Authorization: Bearer <token>` also works.
 
-`-api-token` pins a fixed value across arms, for a machine where a config file has to hold it[cite: 1]:
+The token is shown beside the switch in the app, and printed at startup if a flag armed it. It is **minted when you arm and invalidated the moment you disarm**, so it never outlives its window. Re-arming rotates it; the previous one stops working immediately.
+
+`-api-token` pins a fixed value across arms, for a machine where a config file has to hold it:
 
 ```bash
 cmdbin -api-write -api-token "$(cat ~/.config/cmdbin/token)"
 
 ```
 
-[cite: 1]
 
-**Not in the URL[cite: 1].** A secret in a path lands in shell history, in `ps` output, and in any transcript of the session — including, for this use case, the model's own context[cite: 1]. A header keeps it out of all three[cite: 1].
 
-Being on loopback is no longer sufficient by itself[cite: 1]. Any process on your machine can reach the port, including a browser extension, and a web page you visit can issue a cross-origin POST to `localhost` even though CORS stops it reading the reply[cite: 1]. So[cite: 1]:
+**Not in the URL.** A secret in a path lands in shell history, in `ps` output, and in any transcript of the session — including, for this use case, the model's own context. A header keeps it out of all three.
 
-* Requests carrying an `Origin` header are refused outright[cite: 1].
-* `POST` must send `Content-Type: application/json`[cite: 1].
+Being on loopback is no longer sufficient by itself. Any process on your machine can reach the port, including a browser extension, and a web page you visit can issue a cross-origin POST to `localhost` even though CORS stops it reading the reply. So:
 
-Between them, a browser cannot reach this at all[cite: 1].
+* Requests carrying an `Origin` header are refused outright.
+* `POST` must send `Content-Type: application/json`.
 
-Over network sharing, a caller needs a paired session **and** the token[cite: 1].
+Between them, a browser cannot reach this at all.
+
+Over network sharing, a caller needs a paired session **and** the token.
 
 ### The loop
 
 ```bash
-TOKEN='...'          # from the app, or from the startup banner
+TOKEN='...'   # from the app, or from the startup banner
 H="X-Cmdbin-Token: $TOKEN"
 
 # 1. learn the contract
@@ -508,162 +508,162 @@ curl -s -H "$H" 'localhost:7717/api/llm/pack?groups=3&limit=20' > pack.json
 
 # 4. check it without writing anything
 curl -s -H "$H" -H 'Content-Type: application/json' \
-  -X POST 'localhost:7717/api/llm/add?dry=1' --data-binary @generated.json | jq
+ -X POST 'localhost:7717/api/llm/add?dry=1' --data-binary @generated.json | jq
 
 # 5. write it
 curl -s -H "$H" -H 'Content-Type: application/json' \
-  -X POST localhost:7717/api/llm/add --data-binary @generated.json | jq
+ -X POST localhost:7717/api/llm/add --data-binary @generated.json | jq
 
 ```
 
-[cite: 1]
 
-GET describes and POST executes on the same path, so a caller that has lost the thread can re-fetch the contract from the path it is about to call[cite: 1].
 
-Step 4 writes nothing and returns the same response minus the counts[cite: 1]. Its `problems` array names the command index, the field, and what is wrong — specific enough to hand straight back as a correction[cite: 1].
+GET describes and POST executes on the same path, so a caller that has lost the thread can re-fetch the contract from the path it is about to call.
+
+Step 4 writes nothing and returns the same response minus the counts. Its `problems` array names the command index, the field, and what is wrong — specific enough to hand straight back as a correction.
 
 ### Endpoints
 
 #### `GET /api/llm`
 
-The entrance[cite: 1]. Returns the shared writing rules, the live enums, the ability list, and the current access state[cite: 1].
+The entrance. Returns the shared writing rules, the live enums, the ability list, and the current access state.
 
-Enums come from the binary's own constants rather than from this document, so they cannot go stale[cite: 1]. If a placeholder type is added to cmdbin, it appears here the same day[cite: 1].
+Enums come from the binary's own constants rather than from this document, so they cannot go stale. If a placeholder type is added to cmdbin, it appears here the same day.
 
 #### `GET /api/llm/pack`
 
-Existing commands, in the same shape you are asked to send back[cite: 1].
+Existing commands, in the same shape you are asked to send back.
 
 | Parameter | Meaning |
 | --- | --- |
-| `groups` | comma-separated project ids[cite: 1] |
-| `tags` | comma-separated tag ids[cite: 1] |
-| `tagMode` | `or` (default) or `and`[cite: 1] |
-| `subgroups` | `0` to exclude sub-projects[cite: 1] |
-| `favorites` | `1` for favorites only[cite: 1] |
-| `limit` | default 50[cite: 1] |
+| `groups` | comma-separated project ids |
+| `tags` | comma-separated tag ids |
+| `tagMode` | `or` (default) or `and` |
+| `subgroups` | `0` to exclude sub-projects |
+| `favorites` | `1` for favorites only |
+| `limit` | default 50 |
 
-The projection drops ids, uuids, timestamps and usage events[cite: 1]. On the bundled tour set that is roughly 103 tokens per command instead of 286, which decides whether a project fits in a small context window at all[cite: 1].
+The projection drops ids, uuids, timestamps and usage events. On the bundled tour set that is roughly 103 tokens per command instead of 286, which decides whether a project fits in a small context window at all.
 
-It carries no handle, deliberately[cite: 1]. Adding is safe without one; modifying is not, and modifying is not an ability here[cite: 1].
+It carries no handle, deliberately. Adding is safe without one; modifying is not, and modifying is not an ability here.
 
-`truncated: true` means the limit cut the selection[cite: 1]. Narrow the scope rather than raising the limit — a caller handed four hundred commands does worse than one handed the right twenty[cite: 1].
+`truncated: true` means the limit cut the selection. Narrow the scope rather than raising the limit — a caller handed four hundred commands does worse than one handed the right twenty.
 
 #### `GET /api/llm/add`
 
-The template: the envelope, the add-specific rules, and a worked example[cite: 1]. The placeholder grammar is not repeated here; it came from the entrance, and two copies drift[cite: 1]. Available under a read arm[cite: 1].
+The template: the envelope, the add-specific rules, and a worked example. The placeholder grammar is not repeated here; it came from the entrance, and two copies drift. Available under a read arm.
 
 #### `POST /api/llm/add`
 
-Adds commands[cite: 1]. **Needs a write arm[cite: 1].** `?dry=1` composes and validates without writing[cite: 1].
+Adds commands. **Needs a write arm.** `?dry=1` composes and validates without writing.
 
 ### Writing commands via API
 
-You never write cmdbin's stored placeholder syntax[cite: 1]. Send bare `{name}` markers plus a separate spec list, and the server composes[cite: 1].
+You never write cmdbin's stored placeholder syntax. Send bare `{name}` markers plus a separate spec list, and the server composes.
 
-That is not a style preference[cite: 1]. An inline default containing a brace reparses into a different placeholder plus a stray brace, silently, and no amount of instruction reliably stops a generator producing one[cite: 1]. Made unrepresentable, it stops being a failure mode[cite: 1].
+That is not a style preference. An inline default containing a brace reparses into a different placeholder plus a stray brace, silently, and no amount of instruction reliably stops a generator producing one. Made unrepresentable, it stops being a failure mode.
 
 ```json
 {
-  "group": "Databases",
-  "commands": [{
-    "title": "Back up a database to a file",
-    "command_text": "pg_dump -h {host} -U {user} -d {dbname} > {backup_file}",
-    "description": "Write a plain SQL dump of a database to a file.",
-    "tags": ["postgres", "backup"],
-    "shell": "bash",
-    "placeholders": [
-      { "name": "host", "type": "text", "default": "localhost" },
-      { "name": "user", "type": "text", "default": "postgres" },
-      { "name": "dbname", "type": "text" },
-      { "name": "backup_file", "type": "path" }
-    ],
-    "is_dangerous": true,
-    "danger_note": "The > redirect overwrites the target file without asking."
-  }]
+ "group": "Databases",
+ "commands": [{
+ "title": "Back up a database to a file",
+ "command_text": "pg_dump -h {host} -U {user} -d {dbname} > {backup_file}",
+ "description": "Write a plain SQL dump of a database to a file.",
+ "tags": ["postgres", "backup"],
+ "shell": "bash",
+ "placeholders": [
+  { "name": "host", "type": "text", "default": "localhost" },
+  { "name": "user", "type": "text", "default": "postgres" },
+  { "name": "dbname", "type": "text" },
+  { "name": "backup_file", "type": "path" }
+ ],
+ "is_dangerous": true,
+ "danger_note": "The > redirect overwrites the target file without asking."
+ }]
 }
 
 ```
 
-[cite: 1]
 
-Only `command_text` is required; a missing title falls back to the first line[cite: 1].
 
-**Rules that get things rejected[cite: 1]:**
+Only `command_text` is required; a missing title falls back to the first line.
 
-* Every marker needs exactly one spec, and every spec needs a marker[cite: 1]. No extras on either side[cite: 1].
-* A marker holds only a name[cite: 1]. No type, colon, equals sign, default, or nested marker[cite: 1].
-* `{{name}}` means a literal `{name}` and creates no field[cite: 1]. `${VAR}` is a shell variable and is left alone[cite: 1].
-* A default is literal text and cannot contain a brace or a pipe[cite: 1].
-* `choice` needs a non-empty `choices` array; nothing else may have one[cite: 1].
-* `is_dangerous: true` requires a `danger_note`[cite: 1].
+**Rules that get things rejected:**
 
-Use `secret` for passwords, tokens and connection strings[cite: 1]. Those values are never written to disk[cite: 1].
+* Every marker needs exactly one spec, and every spec needs a marker. No extras on either side.
+* A marker holds only a name. No type, colon, equals sign, default, or nested marker.
+* `{{name}}` means a literal `{name}` and creates no field. `${VAR}` is a shell variable and is left alone.
+* A default is literal text and cannot contain a brace or a pipe.
+* `choice` needs a non-empty `choices` array; nothing else may have one.
+* `is_dangerous: true` requires a `danger_note`.
 
-**The last check is the load-bearing one[cite: 1].** After composing, the server re-parses the result with cmdbin's own parser — not a second implementation — and requires the fields that come out to match the specs that went in[cite: 1]. Anything the parser reads differently is rejected rather than guessed at[cite: 1].
+Use `secret` for passwords, tokens and connection strings. Those values are never written to disk.
+
+**The last check is the load-bearing one.** After composing, the server re-parses the result with cmdbin's own parser — not a second implementation — and requires the fields that come out to match the specs that went in. Anything the parser reads differently is rejected rather than guessed at.
 
 ### API Errors
 
-#### Refused at the gate — HTTP 403[cite: 1]
+#### Refused at the gate — HTTP 403
 
 ```json
 { "error": "the local API is switched off; arm it in the app, or start with -api",
-  "reason": "api-off",
-  "state": "off" }
+ "reason": "api-off",
+ "state": "off" }
 
 ```
 
-[cite: 1]
+
 
 | `reason` | What happened |
 | --- | --- |
-| `api-off` | Not armed, or the window closed[cite: 1] |
-| `api-read-only` | Armed for reading; this call needs a write arm[cite: 1] |
-| `api-token-missing` | No `X-Cmdbin-Token` header[cite: 1] |
-| `api-token-stale` | Not the current token — it changed when the API was re-armed[cite: 1] |
-| `api-origin` | Request carried an `Origin` header[cite: 1] |
-| `api-content-type` | POST without `Content-Type: application/json`[cite: 1] |
+| `api-off` | Not armed, or the window closed |
+| `api-read-only` | Armed for reading; this call needs a write arm |
+| `api-token-missing` | No `X-Cmdbin-Token` header |
+| `api-token-stale` | Not the current token — it changed when the API was re-armed |
+| `api-origin` | Request carried an `Origin` header |
+| `api-content-type` | POST without `Content-Type: application/json` |
 
-**Never a 404[cite: 1].** A caller that gets a 404 retries, invents a different path, or reports success[cite: 1]. A named reason surfaces in the transcript where the person can see it and act[cite: 1].
+**Never a 404.** A caller that gets a 404 retries, invents a different path, or reports success. A named reason surfaces in the transcript where the person can see it and act.
 
-#### Rejected on content — HTTP 400[cite: 1]
+#### Rejected on content — HTTP 400
 
 ```json
 {
-  "problems": [
-    { "index": 0, "title": "Backup", "field": "placeholders",
-      "issue": "the default for \"out\" contains a brace; a default is literal text" }
-  ],
-  "warnings": []
+ "problems": [
+ { "index": 0, "title": "Backup", "field": "placeholders",
+  "issue": "the default for \"out\" contains a brace; a default is literal text" }
+ ],
+ "warnings": []
 }
 
 ```
 
-[cite: 1]
 
-Nothing is written when `problems` is non-empty, even for the commands in the batch that were fine[cite: 1].
 
-#### Accepted — HTTP 200[cite: 1]
+Nothing is written when `problems` is non-empty, even for the commands in the batch that were fine.
+
+#### Accepted — HTTP 200
 
 ```json
 { "composed": ["..."], "warnings": [...], "added": 3, "skipped": 1, "projectsCreated": 1 }
 
 ```
 
-[cite: 1]
 
-`warnings` never blocks a write[cite: 1]. The destructive heuristic warns; it does not reject[cite: 1]. A heuristic that blocks on its own false positives is one people learn to switch off[cite: 1].
+
+`warnings` never blocks a write. The destructive heuristic warns; it does not reject. A heuristic that blocks on its own false positives is one people learn to switch off.
 
 ### What a generated command can and cannot do (API)
 
-* **It can add. It cannot modify or delete[cite: 1].** Those abilities do not exist on this API, and a caller cannot invoke an ability that is not there[cite: 1]. Adds go through the same additive path as the Import dialog, so sending a batch twice skips rather than overwrites[cite: 1].
-* **Everything added is tagged `llm`[cite: 1].** Applied by the server, not optional, and it survives export — so a batch can be reviewed, or selected and deleted, as a batch[cite: 1].
-* **Everything added carries a note[cite: 1].** Every command, not only the ones the heuristic noticed[cite: 1]:
-> Added through the local API by a program. Nobody has read it.[cite: 1]
+* **It can add. It cannot modify or delete.** Those abilities do not exist on this API, and a caller cannot invoke an ability that is not there. Adds go through the same additive path as the Import dialog, so sending a batch twice skips rather than overwrites.
+* **Everything added is tagged `llm`.** Applied by the server, not optional, and it survives export — so a batch can be reviewed, or selected and deleted, as a batch.
+* **Everything added carries a note.** Every command, not only the ones the heuristic noticed:
+> Added through the local API by a program. Nobody has read it.
 
 
-* A command that trips the destructive heuristic carries that plus what the heuristic found[cite: 1]. The note is applied by the server and cannot be suppressed, and it renders in the detail pane next to where the danger marker renders — the screen somebody is looking at in the second before they copy something into a shell[cite: 1].
-* **It never sets the danger flag[cite: 1].** That flag means a person judged this command, and a guess must not be able to impersonate one[cite: 1]. The heuristic writes a note instead[cite: 1].
+* A command that trips the destructive heuristic carries that plus what the heuristic found. The note is applied by the server and cannot be suppressed, and it renders in the detail pane next to where the danger marker renders — the screen somebody is looking at in the second before they copy something into a shell.
+* **It never sets the danger flag.** That flag means a person judged this command, and a guess must not be able to impersonate one. The heuristic writes a note instead.
 
 ---
 
@@ -769,10 +769,10 @@ Options are given on the command line when starting the program.
 | `-exit-on-close` | `5s` | Quit this long after the last tab closes
 
  |
-| `-api` | off | Armed read-only for local LLM/program API integration[cite: 1] |
-| `-api-write` | off | Armed for reading and writing via the local API[cite: 1] |
-| `-api-token` | random | Pin a fixed token value across arms for the local API[cite: 1] |
-| `-api-timeout` | `30m` | Ceiling window for local API access (`0` for indefinite)[cite: 1] |
+| `-api` | off | Armed read-only for local LLM/program API integration |
+| `-api-write` | off | Armed for reading and writing via the local API |
+| `-api-token` | random | Pin a fixed token value across arms for the local API |
+| `-api-timeout` | `30m` | Ceiling window for local API access (`0` for indefinite) |
 
 `CMDBIN_FILE`, `PORT`, `SHARE_PORT` and `PIN` work as environment variables.
 
@@ -808,7 +808,7 @@ If you set `-exit-on-idle`, keep it generous. Browsers slow down timers in backg
 * **A command with braces isn't showing the fields I expected.** See [when you need literal braces](#when-you-need-literal-braces).
 
 
-* **Local API calls are refused with `api-off`.** The API is either not armed or its timeout window has closed; arm it again or check startup flags[cite: 1].
+* **Local API calls are refused with `api-off`.** The API is either not armed or its timeout window has closed; arm it again or check startup flags.
 
 ---
 
@@ -862,6 +862,7 @@ What is recorded, locally, in your bin file:
 
  |
 | Values typed into `secret` placeholders | Never recorded
+
  |
 
 These retention figures are stated in the privacy notice shipped with the application, which is the authoritative version.
