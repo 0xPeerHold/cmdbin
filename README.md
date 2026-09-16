@@ -862,7 +862,6 @@ What is recorded, locally, in your bin file:
 
  |
 | Values typed into `secret` placeholders | Never recorded
-
  |
 
 These retention figures are stated in the privacy notice shipped with the application, which is the authoritative version.
