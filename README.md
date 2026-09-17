@@ -98,7 +98,7 @@ Narrow results using the sidebar: by project, by tag, by shell, or to favorites 
  |
 | `Enter` | From the search box, open the top result
 
- |
+ 
 
 ---
 
@@ -140,7 +140,7 @@ Press `n` or click the new-command button. A command can carry:
  |
 | **Default command** | See [Copying without filling the form](#Default-command).
 
- |
+ 
 
 Nothing except the command text is required.
 
@@ -197,7 +197,7 @@ Add a type after a colon to get a better input:
  |
 | `secret` | A masked field. See the warning below.
 
- |
+ 
 
 ### Defaults
 
@@ -239,7 +239,7 @@ Some commands genuinely contain braces. cmdbin leaves these alone rather than mi
  |
 | `@{Name='X';Expression={...}}` | PowerShell syntax, not a placeholder
 
- |
+ 
 
 A placeholder name starts with a letter or underscore and may contain letters, digits, underscores, hyphens and dots — so `{qrcode.png}` and `{my-file}` are both valid names.
 
@@ -283,7 +283,7 @@ The delete dialog always makes you choose what happens to the contents:
 
  | Go to trash, recoverable
 
- |
+ 
 
 Even the third option is recoverable — those commands go to the trash rather than disappearing.
 
@@ -863,7 +863,7 @@ What is recorded, locally, in your bin file:
  |
 | Values typed into `secret` placeholders | Never recorded
 
- |
+ 
 
 These retention figures are stated in the privacy notice shipped with the application, which is the authoritative version.
 
