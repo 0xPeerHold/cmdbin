@@ -84,21 +84,11 @@ Narrow results using the sidebar: by project, by tag, by shell, or to favorites 
 
 | Key | Does |
 | --- | --- |
-| `/` | Jump to the search box
-
- |
-| `n` | New command
-
- |
-| `j` / `k` | Move down / up through results
-
- |
-| `↓` / `↑` | Same
-
- |
-| `Enter` | From the search box, open the top result
-
- 
+| `/` | Jump to the search box |
+| `n` | New command |
+| `j` / `k` | Move down / up through results |
+| `↓` / `↑` | Same |
+| `Enter` | From the search box, open the top result |
 
 ---
 
@@ -108,41 +98,21 @@ Press `n` or click the new-command button. A command can carry:
 
 | Field | What it is for |
 | --- | --- |
-| **Title** | What you would call it out loud. This is weighted most heavily in search.
-
- |
-| **Command** | The command itself.
-
- |
-| **Description** | What it does, in your own words. Searchable, so write it the way you would ask for it later.
-
- |
-| **Prerequisites** | What has to be true first — a VPN connected, a directory you must be in, a tool installed.
-
- |
-| **Notes** | Anything else. Not weighted as heavily in search.
-
- |
-| **Shell** | bash, zsh, fish, sh, PowerShell, cmd, nushell, SQL, Python, other, or any.
-
- |
-| **Platform** | Linux, macOS, Windows, WSL, Docker, Android, iOS, or any.
-
- |
-| **Language hint** | Stored for future syntax highlighting.
-
- |
-| **Tags** | See [Tags](#Tags).
-
- |
-| **Project** | See [Projects](#Project).
-
- |
-| **Default command** | See [Copying without filling the form](#Default-command).
-
- 
+| **Title** | What you would call it out loud. This is weighted most heavily in search. |
+| **Command** | The command itself. |
+| **Description** | What it does, in your own words. Searchable, so write it the way you would ask for it later. |
+| **Prerequisites** | What has to be true first — a VPN connected, a directory you must be in, a tool installed. |
+| **Notes** | Anything else. Not weighted as heavily in search. |
+| **Shell** | bash, zsh, fish, sh, PowerShell, cmd, nushell, SQL, Python, other, or any. |
+| **Platform** | Linux, macOS, Windows, WSL, Docker, Android, iOS, or any. |
+| **Language hint** | Stored for future syntax highlighting. |
+| **Tags** | See [Tags](#tags). |
+| **Project** | See [Projects](#projects). |
+| **Default command** | See [Copying without filling the form](#copying-without-filling-the-form). |
 
 Nothing except the command text is required.
+
+As you type the command, the editor lists the placeholders it has found underneath — for example *2 placeholders: port:number image*. Check that line before saving: if a part you meant to be fillable isn't listed, cmdbin is going to treat it as plain text. See [How cmdbin recognises a placeholder](#how-cmdbin-recognises-a-placeholder).
 
 Marking a command a **favorite** pins it and lets you filter to favorites only.
 
@@ -161,6 +131,50 @@ Opening that command gives you two fields, `port` and `image`. Fill them in and 
 
 Note that `{port}` appears twice but produces **one** field. Repeats are occurrences of the same placeholder, not separate questions — fill it once and both update.
 
+### How cmdbin recognises a placeholder
+
+Not every pair of braces becomes a field. cmdbin reads the command one character at a time, and a brace only starts a placeholder when **all** of the following are true:
+
+1. The `{` is not directly after a `$` or another `{`. That keeps shell variables such as `${PORT}` and doubled braces out.
+2. A **name** comes straight after it. A name starts with a letter or underscore and may continue with letters, digits, underscores, hyphens and dots.
+3. Optionally, a **type**: a colon followed by lowercase letters, such as `:number`.
+4. Optionally, a **default**: `=` followed by anything up to the closing brace.
+5. It ends with a single `}` — not `}}`.
+
+So the full form is:
+
+```
+{name:type=default}
+```
+
+If any step fails, the braces and everything between them are left exactly as you wrote them. Nothing is reported as an error, because most braces in real commands are *meant* to be left alone — see [When you need literal braces](#when-you-need-literal-braces) — so the editor's placeholder line is how you tell which one you got.
+
+The default is the one part that can contain almost anything, including colons, slashes and spaces, because it runs all the way to the closing brace. The only thing it cannot contain is a `}`.
+
+#### Worked example: a URL in braces
+
+Wrapping a whole URL in braces does **not** make it a placeholder:
+
+```
+curl -s {https://api.github.com/repos/golang/go/releases/latest}
+```
+
+cmdbin reads `https` as a name, then sees `:` and expects a type in lowercase letters. The next character is `/`, so there is no type, and the character after the name is neither `=` nor `}`. The braces fail the rule and the command is saved and copied exactly as typed, braces included. The editor shows no placeholders for it.
+
+To make the URL fillable, give it a name and put the address after `=` as the default:
+
+```
+curl -s {url:url=https://api.github.com/repos/golang/go/releases/latest}
+```
+
+That is a `url` field, pre-filled with the address. Usually it is more useful to make only the part that changes into a field:
+
+```
+curl -s https://api.github.com/repos/{repo=golang/go}/releases/latest
+```
+
+Now the form asks for `repo` alone, pre-filled with `golang/go`, and you can type `docker/cli` without touching the rest of the URL.
+
 ### Placeholder types
 
 Add a type after a colon to get a better input:
@@ -177,27 +191,15 @@ Add a type after a colon to get a better input:
 
 | Type | What you get |
 | --- | --- |
-| `text` | A plain text box. This is the default, so `{name}` is a text field.
+| `text` | A plain text box. This is the default, so `{name}` is a text field. |
+| `number` | A numeric field. |
+| `choice` | A dropdown. List the options after `=`, separated by `\|`. |
+| `path` | A text box intended for a file or directory path. |
+| `url` | A text box intended for a URL. |
+| `boolean` | A dropdown offering `true` and `false`. |
+| `secret` | A masked field. See the warning below. |
 
- |
-| `number` | A numeric field.
-
- |
-| `choice` | A dropdown. List the options after `=`, separated by `|`.
-
- |
-| `path` | A text box intended for a file or directory path.
-
- |
-| `url` | A text box intended for a URL.
-
- |
-| `boolean` | A dropdown offering `true` and `false`.
-
- |
-| `secret` | A masked field. See the warning below.
-
- 
+Types are lowercase. A type cmdbin doesn't recognise, such as `{port:int}`, gives you a plain text field. A type with a capital letter, such as `{port:Number}`, is not a type at all under rule 3 above, so the whole thing is not a placeholder and stays in the command as literal text. `bool` is accepted as a short form of `boolean`.
 
 ### Defaults
 
@@ -230,18 +232,28 @@ Some commands genuinely contain braces. cmdbin leaves these alone rather than mi
 
 | You write | Treated as |
 | --- | --- |
-| `${PORT}` | A shell variable, not a placeholder
-
- |
-| `{{.Names}}` | A Go template, as used by `docker --format`<br> |
-| `{{port}}` | A literal `{port}` — double the braces to escape them
-
- |
-| `@{Name='X';Expression={...}}` | PowerShell syntax, not a placeholder
-
- 
+| `${PORT}` | A shell variable, not a placeholder |
+| `{{.Names}}` | A Go template, as used by `docker --format` |
+| `{{port}}` | A literal `{port}` — double the braces to escape them |
+| `@{Name='X';Expression={...}}` | PowerShell syntax, not a placeholder |
+| `find . -exec rm {} \;` | Empty braces — there is no name, so they are left alone |
+| `'{"level":"debug"}'` | JSON — a `"` cannot start a name |
+| `cp file.{jpg,png} out/` | Shell brace expansion — the `,` fails the rule |
+| `awk '{print $1}'` | awk code — the space after `print` fails the rule |
+| `{https://example.com}` | A URL in braces — see the [worked example](#worked-example-a-url-in-braces) |
 
 A placeholder name starts with a letter or underscore and may contain letters, digits, underscores, hyphens and dots — so `{qrcode.png}` and `{my-file}` are both valid names.
+
+#### Braces that look like placeholders but aren't meant to be
+
+A few tools use exactly the `{word}` shape that cmdbin looks for, so their code gets turned into fields you didn't ask for:
+
+| You write | What happens | Write this instead |
+| --- | --- | --- |
+| `awk '{print}'` | A field named `print` | `awk '{{print}}'` |
+| `jq '{name}'` (object shorthand) | A field named `name` | `jq '{{name}}'` |
+
+Doubled braces are copied out as single ones, so each command on the right reaches your clipboard exactly as the tool expects it. The editor's placeholder line will show you when this has happened: if it lists a field you didn't intend, double those braces.
 
 ---
 
@@ -269,21 +281,9 @@ The delete dialog always makes you choose what happens to the contents:
 
 | Choose | Projects | Commands |
 | --- | --- | --- |
-| **Move commands to Ungrouped** | This project and its subtree go
-
- | All survive, unfiled
-
- |
-| **Promote sub-projects** | Only this project goes
-
- | Its own commands become unfiled
-
- |
-| **Delete the whole subtree** | This project and its subtree go
-
- | Go to trash, recoverable
-
- 
+| **Move commands to Ungrouped** | This project and its subtree go | All survive, unfiled |
+| **Promote sub-projects** | Only this project goes | Its own commands become unfiled |
+| **Delete the whole subtree** | This project and its subtree go | Go to trash, recoverable |
 
 Even the third option is recoverable — those commands go to the trash rather than disappearing.
 
@@ -351,6 +351,8 @@ Sharing is off by default. When it is off, no network listener exists at all; th
 
 To use it, switch sharing on in the interface. You will be shown an address and a six-digit PIN. On the other device, open the address and enter the PIN.
 
+If your machine is on more than one network — Wi-Fi and Ethernet, or with a VPN, Docker or a virtual machine running — you will see several addresses. They are listed most-likely-first, so try the top one and work down.
+
 Things to know before you switch it on:
 
 * Guests get full access, not read-only. A paired device can create, edit and delete commands just as you can. Only sharing itself, the PIN lockout reset, and quitting the program are restricted to the machine running it.
@@ -360,6 +362,9 @@ Things to know before you switch it on:
 
 
 * Your browser will warn about the certificate. The connection is encrypted, but with a certificate your own machine generated rather than one bought from an authority, so the browser cannot vouch for it and says so. Accepting the warning once on your own device is expected here.
+
+
+* **The warning comes back if you move networks.** The certificate has to name the addresses you connect to, so taking the host machine from home to the office replaces it and paired devices see the warning once more. Ordinary use does not trigger this.
 
 
 * **Pairing lasts 12 hours**, then the device must enter the PIN again.
@@ -398,7 +403,7 @@ On a headless server or a Raspberry Pi, start it without a browser and switch sh
 
 ```
 
-It prints an address and a pairing PIN. Note that a paired device gets full access — it can create, edit and delete — so on a machine sitting on a shared network the PIN is the only thing protecting your commands. Add `-pin` if you want a fixed one instead of a new one each time it starts. Do not use `-host` for this; see the warning in [Settings and options](#Settings-and-options).
+It prints an address and a pairing PIN. Note that a paired device gets full access — it can create, edit and delete — so on a machine sitting on a shared network the PIN is the only thing protecting your commands. Add `-pin` if you want a fixed one instead of a new one each time it starts. Do not use `-host` for this; see the warning in [Settings and options](#settings-and-options).
 
 ### Reading your commands from a terminal
 
@@ -673,10 +678,8 @@ Everything is in one file:
 
 | System | Location |
 | --- | --- |
-| Linux, macOS | `~/.cmdbin/bin.json`<br> |
-| Windows | `.cmdbin\bin.json` in your user folder
-
- |
+| Linux, macOS | `~/.cmdbin/bin.json` |
+| Windows | `.cmdbin\bin.json` in your user folder |
 
 It is ordinary JSON. You can read it, copy it, put it in version control, sync it, or move it to another machine. Use `-bin` to point at a different file:
 
@@ -686,6 +689,8 @@ It is ordinary JSON. You can read it, copy it, put it in version control, sync i
 ```
 
 Saves are written to a temporary file and then renamed over the original, so the bin is never left half-written if something goes wrong mid-save.
+
+One exception to "one file": the first time you switch sharing on, `share-cert.pem` and `share-key.pem` are written into the same folder, both readable only by you. Neither exists until you use sharing, and deleting them just makes a new pair next time.
 
 ---
 
@@ -741,34 +746,16 @@ Options are given on the command line when starting the program.
 
 | Option | Default | What it does |
 | --- | --- | --- |
-| `-bin` | `~/.cmdbin/bin.json` | Which bin file to use
-
- |
-| `-port` | `7717` | Which port to listen on
-
- |
-| `-host` | `127.0.0.1` | Which address to bind. Leave this alone unless you understand the warning below
-
- |
-| `-seed` | none | Import this file if the bin is empty
-
- |
-| `-no-browser` | off | Do not open a browser at startup
-
- |
-| `-share` | off | Switch sharing on at startup
-
- |
-| `-share-port` | `7718` | Port used for sharing
-
- |
-| `-pin` | random | Use a fixed pairing PIN instead of a new one each run
-
- |
-| `-exit-on-idle` | never | Quit after this long with no browser in touch, e.g. `10m`<br> |
-| `-exit-on-close` | `5s` | Quit this long after the last tab closes
-
- |
+| `-bin` | `~/.cmdbin/bin.json` | Which bin file to use |
+| `-port` | `7717` | Which port to listen on |
+| `-host` | `127.0.0.1` | Which address to bind. Leave this alone unless you understand the warning below |
+| `-seed` | none | Import this file if the bin is empty |
+| `-no-browser` | off | Do not open a browser at startup |
+| `-share` | off | Switch sharing on at startup |
+| `-share-port` | `7718` | Port used for sharing |
+| `-pin` | random | Use a fixed pairing PIN instead of a new one each run |
+| `-exit-on-idle` | never | Quit after this long with no browser in touch, e.g. `10m` |
+| `-exit-on-close` | `5s` | Quit this long after the last tab closes |
 | `-api` | off | Armed read-only for local LLM/program API integration |
 | `-api-write` | off | Armed for reading and writing via the local API |
 | `-api-token` | random | Pin a fixed token value across arms for the local API |
@@ -778,7 +765,9 @@ Options are given on the command line when starting the program.
 
 If you set `-exit-on-idle`, keep it generous. Browsers slow down timers in background tabs, so a value under about two minutes can quit the program while a tab is still sitting open. The program warns you at startup if you set it that low.
 
-**About `-host`:** binding to anything other than `127.0.0.1` exposes the bin with **no PIN and no encryption** — that protection belongs to the sharing feature, not to the main address. Anyone who can reach the port can read and edit everything. If you want another device to have access, use [sharing](#sharing) instead.
+**About `-host`:** binding to anything other than `127.0.0.1` exposes the bin with **no PIN and no encryption** — that protection belongs to the sharing feature, not to the main address. Anyone who can reach the port can read and edit everything. Copy buttons also stop working properly, because a plain `http` address that is not `localhost` is not treated as a secure context by browsers. If you want another device to have access, use [sharing](#sharing-with-another-device) instead.
+
+When you do bind wider, startup prints the addresses other devices can use alongside the loopback one, so you do not have to look up your own IP.
 
 ---
 
@@ -790,10 +779,10 @@ If you set `-exit-on-idle`, keep it generous. Browsers slow down timers in backg
 * **"Port already in use."** Either cmdbin is already running — check your other browser tabs — or something else has the port. Use `-port 7800` or whatever is free.
 
 
-* **My phone can't reach the shared address.** Both devices must be on the same network. Some public and guest networks block devices from seeing each other entirely, and this cannot be worked around from inside the app.
+* **My phone can't reach the shared address.** If more than one address is listed, try each in turn — the top one is the most likely but not guaranteed. Otherwise, both devices must be on the same network, and some public and guest networks block devices from seeing each other entirely, which cannot be worked around from inside the app.
 
 
-* **The certificate warning worries me.** It is expected. See [sharing](#sharing) for what it means.
+* **The certificate warning worries me.** It is expected. See [sharing](#sharing-with-another-device) for what it means.
 
 
 * **I'm locked out of pairing.** Ten wrong PIN attempts locks it. Reset it from the machine running cmdbin, or restart the program for a fresh PIN.
@@ -825,7 +814,7 @@ Worth being explicit, because it shapes what the program is safe to be used for:
 * **It does not manage secrets.** The `secret` placeholder type keeps values out of your bin and off the screen, but cmdbin is not a password manager and the bin file is not encrypted. Anything you type into a non-secret field, or paste into the command text itself, is stored in plain text.
 
 
-* **It has no terminal interface.** The interface is a web page and needs a browser. There are no command-line subcommands for searching or copying — see [Running without a browser](#Running-without-a-browser) for the headless options.
+* **It has no terminal interface.** The interface is a web page and needs a browser. There are no command-line subcommands for searching or copying — see [Running without a browser](#running-without-a-browser) for the headless options.
 
 
 
@@ -855,15 +844,9 @@ What is recorded, locally, in your bin file:
 
 | Recorded | Retained |
 | --- | --- |
-| That you used or copied a command, and when | 365 days, up to 100 events per command
-
- |
-| Values typed into non-secret placeholders | The 10 most recent per field
-
- |
-| Values typed into `secret` placeholders | Never recorded
-
- 
+| That you used or copied a command, and when | 365 days, up to 100 events per command |
+| Values typed into non-secret placeholders | The 10 most recent per field |
+| Values typed into `secret` placeholders | Never recorded |
 
 These retention figures are stated in the privacy notice shipped with the application, which is the authoritative version.
 
